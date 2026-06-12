@@ -61,7 +61,7 @@ The probabilities are updated after every iteration based on the new composition
 Polya-Urn-Model/
 │
 ├── single_simulation.py
-├── monte_carlo_simulation.py
+├── monte_carlo_estimate.py
 ├── README.md
 └── requirements.txt
 ```
