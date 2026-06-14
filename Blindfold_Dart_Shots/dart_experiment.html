@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blindfold Dart Shots Experiment</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:    #185FA5;
+    --blue-lt: #E6F1FB;
+    --blue-md: #378ADD;
+    --coral:   #D85A30;
+    --gray:    #888780;
+    --gray-lt: #F1EFE8;
+    --gray-bd: #D3D1C7;
+    --text:    #2C2C2A;
+    --text-2:  #5F5E5A;
+    --text-3:  #888780;
+    --bg:      #ffffff;
+    --bg-2:    #F7F6F3;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--gray-lt);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px;
+  }
+
+  .page { width: 100%; max-width: 900px; }
+
+  header { margin-bottom: 24px; }
+  header h1 { font-size: 22px; font-weight: 500; color: var(--text); }
+  header p  { font-size: 14px; color: var(--text-2); margin-top: 4px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--gray-bd);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  /* Controls */
+  .controls-card { margin-bottom: 16px; }
+
+  .field-label {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  input[type=range] {
+    flex: 1;
+    height: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background: var(--gray-bd);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--blue);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--blue);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--blue);
+  }
+
+  .slider-val {
+    font-size: 13px;
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    color: var(--blue);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .btn-row { display: flex; gap: 8px; }
+
+  button {
+    flex: 1;
+    padding: 9px 16px;
+    border-radius: 8px;
+    border: 0.5px solid var(--gray-bd);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  button:hover { background: var(--bg-2); border-color: var(--gray); }
+  button:active { transform: scale(0.98); }
+
+  #runBtn {
+    background: var(--blue);
+    color: #fff;
+    border-color: var(--blue);
+  }
+  #runBtn:hover { background: #185FA5cc; }
+  #runBtn.running {
+    background: var(--coral);
+    border-color: var(--coral);
+  }
+  #runBtn.running:hover { background: #D85A30cc; }
+
+  /* Canvas */
+  canvas {
+    display: block;
+    width: 100%;
+    border-radius: 8px;
+    border: 0.5px solid var(--gray-bd);
+  }
+
+  .exp-label {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-3);
+    margin-top: 8px;
+  }
+
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .metric {
+    background: var(--bg-2);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .metric.accent { background: var(--blue-lt); }
+
+  .metric .lbl {
+    font-size: 11px;
+    color: var(--text-3);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    margin-bottom: 4px;
+  }
+  .metric.accent .lbl { color: var(--blue); }
+
+  .metric .val {
+    font-size: 20px;
+    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    color: var(--text);
+  }
+  .metric.accent .val { color: var(--blue); }
+
+  /* Distribution */
+  .dist-title {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .bar-lbl {
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-3);
+    width: 42px;
+    text-align: right;
+  }
+  .bar-track {
+    flex: 1;
+    height: 9px;
+    background: var(--gray-lt);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    background: var(--blue-md);
+    border-radius: 3px;
+    transition: width 0.25s;
+  }
+  .bar-count {
+    font-size: 11px;
+    font-family: 'Courier New', monospace;
+    color: var(--text-3);
+    width: 28px;
+  }
+
+  .num-exp-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .num-exp-row input[type=number] {
+    width: 90px;
+    padding: 6px 10px;
+    border: 0.5px solid var(--gray-bd);
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    font-weight: 500;
+    color: var(--blue);
+    background: var(--bg);
+    outline: none;
+    text-align: center;
+  }
+  .num-exp-row input[type=number]:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px var(--blue-lt);
+  }
+  .num-exp-row input[type=number]::-webkit-inner-spin-button,
+  .num-exp-row input[type=number]::-webkit-outer-spin-button { opacity: 1; }
+  .field-hint {
+    font-size: 12px;
+    color: var(--text-3);
+  }
+  .progress-bar-wrap {
+    margin-top: 10px;
+    height: 4px;
+    background: var(--gray-lt);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 2px;
+    transition: width 0.1s;
+    width: 0%;
+  }
+  .done-badge {
+    display: none;
+    margin-top: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--blue);
+    text-align: center;
+    background: var(--blue-lt);
+    border-radius: 6px;
+    padding: 5px 10px;
+  }
+  .empty-note {
+    font-size: 12px;
+    color: var(--text-3);
+    text-align: center;
+    padding: 16px 0;
+  }
+
+  @media (max-width: 680px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Blindfold dart shots experiment</h1>
+    <p>Random throws inside a unit circle — track the expected minimum distance from center</p>
+  </header>
+
+  <div class="layout">
+    <!-- Left: canvas + controls -->
+    <div>
+      <div class="card controls-card">
+        <span class="field-label">Shots per experiment</span>
+        <div class="slider-row">
+          <input type="range" id="shotsSlider" min="100" max="100000" step="100" value="10">
+          <span class="slider-val" id="shotsVal">10000</span>
+        </div>
+        <span class="field-label">Number of experiments</span>
+        <div class="num-exp-row">
+          <input type="number" id="numExpInput" min="1" max="10000000" value=" " placeholder="10">
+          <span class="field-hint">experiments × <span id="shotsHint">100</span> shots each</span>
+        </div>
+        <div class="btn-row">
+          <button id="runBtn" onclick="toggleRun()">&#9654; Start</button>
+          <button onclick="doReset()">&#8635; Reset</button>
+        </div>
+      </div>
+
+      <canvas id="board" width="320" height="320"></canvas>
+      <div class="exp-label" id="expLabel">Experiments run: 0 / 10</div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="done-badge" id="doneBadge">✓ All experiments complete</div>
+    </div>
+
+    <!-- Right: stats -->
+    <div class="card">
+      <div class="stats-grid">
+        <div class="metric accent">
+          <div class="lbl">Expected min (avg)</div>
+          <div class="val" id="sAvg">—</div>
+        </div>
+        <div class="metric">
+          <div class="lbl">Latest min</div>
+          <div class="val" id="sLatest">—</div>
+        </div>
+        <div class="metric">
+          <div class="lbl">Std deviation</div>
+          <div class="val" id="sStd">—</div>
+        </div>
+        <div class="metric">
+          <div class="lbl">Total runs</div>
+          <div class="val" id="sTotal">0</div>
+        </div>
+        <div class="metric">
+          <div class="lbl">Min of mins</div>
+          <div class="val" id="sMinMin">—</div>
+        </div>
+        <div class="metric">
+          <div class="lbl">Max of mins</div>
+          <div class="val" id="sMaxMin">—</div>
+        </div>
+      </div>
+
+      <div class="dist-title">Distribution of min distances</div>
+      <div id="distChart"><div class="empty-note">Run some experiments to see distribution</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('board');
+  const ctx    = canvas.getContext('2d');
+  const CX = 160, CY = 160, R = 145;
+
+  let running = false;
+  let mins    = [];
+  let loopTimer = null;
+
+  // Slider sync
+  const slider = document.getElementById('shotsSlider');
+  const shotsValEl = document.getElementById('shotsVal');
+  slider.addEventListener('input', () => {
+    shotsValEl.textContent = slider.value;
+    document.getElementById('shotsHint').textContent = slider.value;
+  });
+
+  function numShots()   { return parseInt(slider.value); }
+  function numExpLimit(){ return parseInt(document.getElementById('numExpInput').value) || 10; }
+
+  // Generate one random shot uniformly in unit disk
+  function randShot() {
+    const angle = Math.random() * 2 * Math.PI;
+    const r     = Math.sqrt(Math.random());
+    return { x: r * Math.cos(angle), y: r * Math.sin(angle) };
+  }
+
+  function runOne() {
+    const n    = numShots();
+    const pts  = Array.from({ length: n }, randShot);
+    const dists = pts.map(p => Math.sqrt(p.x * p.x + p.y * p.y));
+    const minD  = Math.min(...dists);
+    mins.push(minD);
+    draw(pts, dists, minD);
+    updateStats();
+  }
+
+  function draw(pts, dists, minD) {
+    ctx.clearRect(0, 0, 320, 320);
+
+    // Background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 320, 320);
+
+    // Grid rings
+    ctx.strokeStyle = '#E8E6DF';
+    ctx.lineWidth   = 0.5;
+    [0.25, 0.5, 0.75, 1].forEach(f => {
+      ctx.beginPath();
+      ctx.arc(CX, CY, R * f, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+
+    // Crosshairs
+    ctx.strokeStyle = '#E8E6DF';
+    ctx.lineWidth   = 0.5;
+    ctx.beginPath(); ctx.moveTo(CX - R, CY); ctx.lineTo(CX + R, CY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CX, CY - R); ctx.lineTo(CX, CY + R); ctx.stroke();
+
+    // Outer circle border
+    ctx.strokeStyle = '#D3D1C7';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.arc(CX, CY, R, 0, Math.PI * 2);
+    ctx.stroke();
+
+    if (pts) {
+      // Draw all shots
+      pts.forEach((p, i) => {
+        const d    = dists[i];
+        const x    = CX + p.x * R;
+        const y    = CY + p.y * R;
+        const isMn = d === minD;
+        ctx.beginPath();
+        ctx.arc(x, y, isMn ? 5 : 2.5, 0, Math.PI * 2);
+        ctx.fillStyle = isMn ? '#D85A30' : (d < 0.35 ? '#378ADD' : '#B4B2A9');
+        ctx.fill();
+      });
+
+      // Dashed line from center to nearest
+      const mp = pts[dists.indexOf(minD)];
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = '#D85A30';
+      ctx.lineWidth   = 1;
+      ctx.beginPath();
+      ctx.moveTo(CX, CY);
+      ctx.lineTo(CX + mp.x * R, CY + mp.y * R);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Center dot
+    ctx.fillStyle = '#185FA5';
+    ctx.beginPath();
+    ctx.arc(CX, CY, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  function updateStats() {
+    const n = mins.length;
+    document.getElementById('sTotal').textContent = n;
+    document.getElementById('expLabel').textContent = `Experiments run: ${n}`;
+
+    if (!n) {
+      ['sLatest','sAvg','sStd','sMinMin','sMaxMin'].forEach(id => {
+        document.getElementById(id).textContent = '—';
+      });
+      document.getElementById('distChart').innerHTML =
+        '<div class="empty-note">Run some experiments to see distribution</div>';
+      return;
+    }
+
+    const last = mins[n - 1];
+    const avg  = mins.reduce((a, b) => a + b, 0) / n;
+    const vari = mins.reduce((s, v) => s + (v - avg) ** 2, 0) / n;
+    const std  = Math.sqrt(vari);
+    const mn   = Math.min(...mins);
+    const mx   = Math.max(...mins);
+
+    document.getElementById('sLatest').textContent = last.toFixed(4);
+    document.getElementById('sAvg').textContent    = avg.toFixed(4);
+    document.getElementById('sStd').textContent    = std.toFixed(4);
+    document.getElementById('sMinMin').textContent = mn.toFixed(4);
+    document.getElementById('sMaxMin').textContent = mx.toFixed(4);
+
+    // Distribution chart
+    if (n < 2) {
+      document.getElementById('distChart').innerHTML =
+        '<div class="empty-note">Run a few more experiments to see distribution</div>';
+      return;
+    }
+
+    const bins = 8;
+    const bw   = (mx - mn) / bins || 0.05;
+    const hist = Array(bins).fill(0);
+    mins.forEach(v => hist[Math.min(Math.floor((v - mn) / bw), bins - 1)]++);
+    const maxH = Math.max(...hist);
+
+    document.getElementById('distChart').innerHTML = hist.map((c, i) => {
+      const lbl = (mn + i * bw).toFixed(3);
+      const pct = maxH ? (c / maxH * 100).toFixed(1) : 0;
+      return `<div class="bar-row">
+        <div class="bar-lbl">${lbl}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        <div class="bar-count">${c}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function updateProgress() {
+    const limit = numExpLimit();
+    const done  = mins.length;
+    const pct   = Math.min(done / limit * 100, 100);
+    document.getElementById('progressFill').style.width = pct + '%';
+    document.getElementById('expLabel').textContent = `Experiments run: ${done} / ${limit}`;
+  }
+
+  function stopRun(completed) {
+    running = false;
+    clearTimeout(loopTimer);
+    const btn = document.getElementById('runBtn');
+    btn.textContent = '▶ Start';
+    btn.classList.remove('running');
+    if (completed) {
+      document.getElementById('doneBadge').style.display = 'block';
+    }
+  }
+
+  function loop() {
+    if (!running) return;
+    const limit = numExpLimit();
+    if (mins.length >= limit) { stopRun(true); return; }
+    runOne();
+    updateProgress();
+    if (mins.length >= limit) { stopRun(true); return; }
+    loopTimer = setTimeout(loop, 1);
+  }
+
+  function toggleRun() {
+    const limit = numExpLimit();
+    if (mins.length >= limit && !running) {
+      // Already done — do nothing until reset
+      return;
+    }
+    running = !running;
+    const btn = document.getElementById('runBtn');
+    if (running) {
+      document.getElementById('doneBadge').style.display = 'none';
+      btn.textContent = '⏸ Pause';
+      btn.classList.add('running');
+      loop();
+    } else {
+      btn.textContent = '▶ Start';
+      btn.classList.remove('running');
+      clearTimeout(loopTimer);
+    }
+  }
+
+  function doReset() {
+    running = false;
+    clearTimeout(loopTimer);
+    const btn = document.getElementById('runBtn');
+    btn.textContent = '▶ Start';
+    btn.classList.remove('running');
+    mins = [];
+    document.getElementById('progressFill').style.width = '0%';
+    document.getElementById('expLabel').textContent = `Experiments run: 0 / ${numExpLimit()}`;
+    document.getElementById('doneBadge').style.display = 'none';
+    draw(null, null, null);
+    updateStats();
+  }
+
+  // Keep label in sync when user changes the experiment count input
+  document.getElementById('numExpInput').addEventListener('input', () => {
+    if (!running) {
+      document.getElementById('expLabel').textContent = `Experiments run: ${mins.length} / ${numExpLimit()}`;
+    }
+  });
+
+  // Initial draw
+  draw(null, null, null);
+</script>
+</body>
+</html>
