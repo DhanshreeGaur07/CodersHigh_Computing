@@ -1,15 +1,18 @@
 from scheduling_algorithms import fcfs_scheduling
 from scheduling_algorithms import sjf_scheduling  
 from scheduling_algorithms import earliest_finish
+from scheduling_algorithms import hff_scheduling
+from scheduling_algorithms import fee_per_hour
+from scheduling_algorithms import max_revenue_scheduling
 
+print("\n----- MAXIMUM APPOINTMENTS -----\n")
 
-# Function to Calculate Total revenue from a list of appointments
-
-def calculate_revenue(appointments):
-    return sum(app[3] for app in appointments)
-
+#------------------------------------------------
+# CASE 1 : MAXIMUM APPPOINTMENTS
+#------------------------------------------------
 
 # for all appointments Revenue = 100
+
 appointments = [
     ("Adam", 0, 3, 100),
     ("Barbie", 1, 4, 100),
@@ -24,31 +27,46 @@ appointments = [
     ("Kris", 13, 15, 100),
 ]
 
+fcfs_appointments, fcfs_revenue = fcfs_scheduling(appointments)
+sjf_appointments, sjf_revenue = sjf_scheduling(appointments)
+greedy_appointments, greedy_revenue = earliest_finish(appointments)
 
-#---------------------------------------------------
-# COMPARING ALL APPROACHES
-#---------------------------------------------------
+print(f"FCFS : {len(fcfs_appointments)} appointments and Revenue = ${fcfs_revenue}")
+print(f"SJF : {len(sjf_appointments)} appointments and Revenue = ${sjf_revenue}")
+print(f"EARLIEST FINISH (OPTIMAL) : {len(greedy_appointments)} appointments and Revenue = ${greedy_revenue}")
 
-methods = {
-    "First Come First Serve": fcfs_scheduling,
-    "Shortest Job First": sjf_scheduling,
-    "Earliest Finish Time": earliest_finish
-}
 
-for name, algorithm in methods.items() :
+print("\n----- MAXIMUM REVENUE -----\n")
 
-    result = algorithm(appointments)
-    print("\n",name)
 
-    for r in result:
-        print(r)
+#------------------------------------------------
+# CASE 2 : MAXIMUM REVENUE
+#------------------------------------------------
 
-    print("Appointments =",len(result))
+appointments_revenue = [
+    ("Adam", 0, 3, 200),
+    ("Barbie", 1, 4, 150),
+    ("Caroline", 3, 5, 300),
+    ("David", 5, 7, 700),
+    ("Elara", 6, 8, 900),
+    ("Felix", 8, 10, 1000),
+    ("George", 9, 11, 400),
+    ("Hannah", 10, 12, 50),
+    ("Ivan", 11, 13, 800),
+    ("Java", 12, 14, 350),
+    ("Kris", 13, 15, 1060),
+]
 
-    print("Revenue = $",calculate_revenue(result))
+fcfs_revenue_appointments, r1 = fcfs_scheduling(appointments_revenue)
+hff_appointments, r2 = hff_scheduling(appointments_revenue)
+ratio_appointments, r3 = fee_per_hour(appointments_revenue)
+optimal_revenue_appointments, r4 = max_revenue_scheduling(appointments_revenue)
 
-    # selected_appointments = algorithm(appointments)
-    # revenue = calculate_revenue(selected_appointments)
+print(f"FCFS Revenue : ${r1}, {len(fcfs_revenue_appointments)} appointments")
+print(f"Highest Fee First Revenue : ${r2}, {len(hff_appointments)} appointments")
+print(f"Fee per Hour Revenue : ${r3}, {len(ratio_appointments)} appointments")
+print(f"OPTIMAL Revenue : ${r4}, {len(optimal_revenue_appointments)} appointments")
 
-    # print(f"{name} selected appointments: {selected_appointments}")
-    # print(f"{name} total revenue: {revenue}\n")
+print("\nOptimal revenue appointments:")
+for appointment in optimal_revenue_appointments:
+    print(appointment)
